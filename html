@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>US Bases Europe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Mulish:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #f4f0eb;
+    --surface: #faf8f5;
+    --surface2: #ede9e3;
+    --border: #ddd8d0;
+    --border2: #c8c0b4;
+    --accent: #8b6914;
+    --accent2: #a07820;
+    --red: #9b2c2c;
+    --text: #2a2420;
+    --text2: #4a4038;
+    --muted: #8a7e70;
+    --faint: #b8b0a4;
+    --army: #39ff14;
+    --navy: #00cfff;
+    --airforce: #ff6600;
+    --nato: #bf00ff;
+    --shadow: rgba(42,36,32,.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Mulish', sans-serif;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+    z-index: 1000;
+    box-shadow: 0 1px 8px var(--shadow);
+  }
+
+  .logo { font-family: 'Oswald', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+  .logo span { color: var(--muted); font-weight: 400; }
+
+  .hdiv { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+
+  /* ── SEARCH ── */
+  .search-wrap { position: relative; flex: 1; max-width: 340px; }
+  .search-icon {
+    position: absolute; left: 10px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted); font-size: 14px; pointer-events: none;
+  }
+  #search {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 7px 14px 7px 32px;
+    color: var(--text);
+    font-family: 'Mulish', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  #search:focus {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 3px rgba(139,105,20,.1);
+    background: var(--surface);
+  }
+  #search::placeholder { color: var(--faint); }
+
+  #suggestions {
+    position: absolute;
+    top: calc(100% + 6px); left: 0; right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    z-index: 9999;
+    display: none;
+    max-height: 280px;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px var(--shadow);
+    overflow: hidden;
+  }
+  .si {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+    transition: background .12s;
+  }
+  .si:last-child { border-bottom: none; }
+  .si:hover, .si.active { background: var(--surface2); }
+  .si .sn { font-weight: 600; color: var(--text); }
+  .si .sc { font-size: 10px; color: var(--muted); margin-top: 1px; font-weight: 400; }
+  .sdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── FILTERS ── */
+  .filters { display: flex; gap: 5px; margin-left: auto; flex-shrink: 0; }
+  .fb {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 5px 12px;
+    font-family: 'Mulish', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .fb:hover { color: var(--text); border-color: var(--border2); background: var(--surface); }
+  .fb.active { color: #fff; border-color: transparent; }
+  .fb[data-cat="all"].active { background: var(--accent); }
+  .fb[data-cat="army"].active { background: var(--army); }
+  .fb[data-cat="navy"].active { background: var(--navy); }
+  .fb[data-cat="airforce"].active { background: var(--airforce); }
+  .fb[data-cat="nato"].active { background: var(--nato); }
+  .fdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── LAYOUT ── */
+  .main { flex: 1; display: flex; overflow: hidden; position: relative; }
+  #map { flex: 1; z-index: 1; }
+
+  /* ── PANEL ── */
+  #panel {
+    width: 360px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: width .3s, transform .3s;
+    flex-shrink: 0;
+    box-shadow: -4px 0 16px var(--shadow);
+    z-index: 100;
+  }
+  #panel.closed { width: 0; }
+
+  /* Mobile: panel slides up from bottom */
+  @media (max-width: 768px) {
+    #panel {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      width: 100% !important;
+      height: 60vh;
+      border-left: none;
+      border-top: 1px solid var(--border);
+      border-radius: 16px 16px 0 0;
+      transform: translateY(0);
+      box-shadow: 0 -4px 24px var(--shadow);
+    }
+    #panel.closed {
+      width: 100% !important;
+      transform: translateY(100%);
+    }
+    .filters { display: none; }
+    .mobile-filters {
+      display: flex !important;
+      padding: 8px 16px;
+      gap: 6px;
+      overflow-x: auto;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .logo span { display: none; }
+    .hdiv { display: none; }
+  }
+
+  .mobile-filters { display: none; }
+
+  /* Panel drag handle for mobile */
+  .panel-handle {
+    display: none;
+    width: 36px; height: 4px;
+    background: var(--border2);
+    border-radius: 2px;
+    margin: 10px auto 4px;
+    flex-shrink: 0;
+  }
+  @media (max-width: 768px) {
+    .panel-handle { display: block; }
+  }
+
+  .pi { padding: 16px 18px 20px; overflow-y: auto; flex: 1; }
+
+  .ph { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 10px; }
+  .pname { font-family: 'Oswald', sans-serif; font-size: 18px; font-weight: 700; line-height: 1.2; color: var(--text); }
+  .pcountry { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; font-weight: 500; }
+  .cbtn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all .15s;
+  }
+  .cbtn:hover { color: var(--text); border-color: var(--border2); background: var(--surface); }
+
+  .catbadge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px;
+    border-radius: 10px;
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .catrow { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+
+  .divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+  .ir { margin-bottom: 10px; }
+  .il {
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--muted); margin-bottom: 3px;
+  }
+  .iv { font-size: 13px; color: var(--text2); line-height: 1.55; font-weight: 400; }
+
+  .sp {
+    display: inline-block; padding: 2px 8px;
+    border-radius: 8px; font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .sop { background: rgba(58,110,48,.12); color: #2a6e20; border: 1px solid rgba(58,110,48,.25); }
+  .srot { background: rgba(155,44,44,.1); color: var(--red); border: 1px solid rgba(155,44,44,.2); }
+
+  .ulist {
+    font-size: 12px; color: var(--text2); line-height: 1.9;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent2);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 12px;
+  }
+
+  .wlink {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--accent); text-decoration: none;
+    font-size: 12px; font-weight: 500;
+    padding: 6px 12px;
+    border: 1px solid rgba(139,105,20,.3);
+    border-radius: 16px;
+    transition: all .15s;
+  }
+  .wlink:hover { background: rgba(139,105,20,.08); border-color: var(--accent); }
+
+  .empty {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 100%; gap: 8px;
+    color: var(--faint); text-align: center; padding: 40px 20px;
+  }
+  .empty p { font-size: 12px; line-height: 1.7; font-weight: 400; color: var(--muted); }
+
+  /* ── STATUS BAR ── */
+  .statusbar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 5px 20px;
+    display: flex; align-items: center; gap: 14px;
+    font-size: 10px; font-weight: 500;
+    color: var(--muted); flex-shrink: 0;
+    letter-spacing: .3px;
+  }
+  .statusbar span { color: var(--accent); font-weight: 700; }
+
+  /* ── MAP OVERRIDES ── */
+  .leaflet-container { background: #e8e0d4; font-family: 'Mulish', sans-serif; }
+  .custom-marker {
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.7);
+    cursor: pointer;
+    box-shadow: 0 0 8px currentColor, 0 2px 4px rgba(0,0,0,.3);
+    transition: transform .15s;
+    position: relative;
+    overflow: visible;
+  }
+  .leaflet-tooltip {
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    color: var(--text) !important;
+    font-family: 'Mulish', sans-serif !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    padding: 5px 10px !important;
+    box-shadow: 0 4px 16px var(--shadow) !important;
+  }
+  .leaflet-tooltip-top::before { border-top-color: var(--border) !important; }
+  .leaflet-control-zoom { border: 1px solid var(--border) !important; border-radius: 8px !important; overflow: hidden; box-shadow: 0 2px 8px var(--shadow) !important; }
+  .leaflet-control-zoom a { background: var(--surface) !important; color: var(--text2) !important; border-bottom-color: var(--border) !important; font-weight: 600; }
+  .leaflet-control-zoom a:hover { background: var(--surface2) !important; color: var(--accent) !important; }
+  .leaflet-control-attribution { background: rgba(244,240,235,.85) !important; color: var(--muted) !important; font-size: 9px !important; border-radius: 4px !important; }
+  .leaflet-control-attribution a { color: var(--muted) !important; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── FLUID RESPONSIVE ── */
+
+  /* Panel and header items scale smoothly with viewport width */
+  #panel { width: clamp(260px, 28vw, 400px); }
+  .logo { font-family: 'Oswald', sans-serif; font-size: clamp(10px, 1.2vw, 14px); }
+  .search-wrap { max-width: clamp(140px, 22vw, 340px); }
+  .fb { padding: clamp(4px, .4vw, 5px) clamp(7px, .9vw, 12px); font-size: clamp(9px, .85vw, 11px); }
+
+  /* Below 680px: switch to mobile bottom-sheet layout */
+  @media (max-width: 680px) {
+    header { padding: 0 12px; gap: 8px; height: 50px; }
+    .logo span { display: none; }
+    .hdiv { display: none; }
+    .filters { display: none; }
+    .search-wrap { max-width: none; flex: 1; }
+
+    .mobile-filters {
+      display: flex !important;
+      padding: 7px 12px;
+      gap: 6px;
+      overflow-x: auto;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      scrollbar-width: none;
+    }
+    .mobile-filters::-webkit-scrollbar { display: none; }
+
+    #panel {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      width: 100% !important;
+      height: 60dvh;
+      border-left: none;
+      border-top: 1px solid var(--border);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -4px 24px var(--shadow);
+      transition: transform .3s;
+    }
+    #panel.closed { transform: translateY(100%); width: 100% !important; }
+    .panel-handle { display: block; }
+    .statusbar { padding: 4px 12px; font-size: 9px; }
+    .statusbar a { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">US Bases <span>/ Europe</span></div>
+  <div class="hdiv"></div>
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="search" placeholder="Search base, country, city…" autocomplete="off">
+    <div id="suggestions"></div>
+  </div>
+  <div class="hdiv"></div>
+  <div class="filters">
+    <button class="fb active" data-cat="all">All</button>
+    <button class="fb" data-cat="army"><span class="fdot" style="background:#39ff14"></span>Army</button>
+    <button class="fb" data-cat="navy"><span class="fdot" style="background:#00cfff"></span>Navy</button>
+    <button class="fb" data-cat="airforce"><span class="fdot" style="background:#ff6600"></span>Air Force</button>
+    <button class="fb" data-cat="nato"><span class="fdot" style="background:#bf00ff"></span>NATO</button>
+  </div>
+</header>
+
+<!-- Mobile filters row -->
+<div class="mobile-filters" id="mobile-filters">
+  <button class="fb active" data-cat="all">All</button>
+  <button class="fb" data-cat="army"><span class="fdot" style="background:#39ff14"></span>Army</button>
+  <button class="fb" data-cat="navy"><span class="fdot" style="background:#00cfff"></span>Navy</button>
+  <button class="fb" data-cat="airforce"><span class="fdot" style="background:#ff6600"></span>Air Force</button>
+  <button class="fb" data-cat="nato"><span class="fdot" style="background:#bf00ff"></span>NATO</button>
+</div>
+
+<div class="main">
+  <div id="map"></div>
+  <div id="panel" class="closed">
+    <div class="panel-handle"></div>
+    <div class="pi" id="panel-content">
+      <div class="empty">
+        <p>Tap any marker<br>to view base details</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <span id="vc">—</span> installations &nbsp;·&nbsp; Data current as of 2026 &nbsp;·&nbsp;
+  <a href="https://github.com/publicoversight/us-military-europe-map" target="_blank" style="color:var(--muted);text-decoration:none">github.com/publicoversight</a>
+</div>
+
+<script>
+const COLOR = { army:'#39ff14', navy:'#00cfff', airforce:'#ff6600', nato:'#bf00ff' };
+const LABEL = { army:'U.S. Army', navy:'U.S. Navy', airforce:'U.S. Air Force', nato:'NATO' };
+
+function getCategories(base) {
+  const cats = new Set();
+  cats.add(base.category);
+  const b = (base.branch || '').toLowerCase();
+  if (b.includes('u.s. army') && base.category !== 'army') cats.add('army');
+  if (b.includes('u.s. navy') && base.category !== 'navy') cats.add('navy');
+  if ((b.includes('usaf') || b.includes('ussf') || b.includes('raf')) && base.category !== 'airforce') cats.add('airforce');
+  if (b.includes('nato') && base.category !== 'nato') cats.add('nato');
+  return [...cats];
+}
+
+// ── MAP ──
+const map = L.map('map', { center:[50, 15], zoom:4 });
+
+// ESRI real satellite imagery — free, no API key
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Imagery © Esri, USGS, NOAA',
+  maxZoom: 19
+}).addTo(map);
+
+// Place name labels on top
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19, opacity: 0.8
+}).addTo(map);
+
+let bases = [], markers = [], activeFilter = 'all';
+
+fetch('bases.json')
+  .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+  .then(data => { bases = data; renderMarkers(); updateCount(); })
+  .catch(err => console.error('Failed to load bases.json:', err));
+
+function renderMarkers() {
+  markers.forEach(m => map.removeLayer(m.layer));
+  markers = [];
+  bases.forEach(base => {
+    if (!base.lat || !base.lon) return;
+    const cats = getCategories(base);
+    const color = COLOR[base.category] || '#8b6914';
+    const show = activeFilter === 'all' || cats.includes(activeFilter);
+    const icon = L.divIcon({
+      className: '',
+      html: `<div class="custom-marker" style="background:${color};color:${color}">${base.nuclear ? '<span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:11px;line-height:1">☢️</span>' : ''}</div>`,
+      iconSize:[13,13], iconAnchor:[6,6]
+    });
+    const marker = L.marker([base.lat, base.lon], {icon})
+      .addTo(map)
+      .bindTooltip(base.name, {direction:'top', offset:[0,-8]});
+    if (!show) { const el = marker.getElement(); if(el) el.style.display='none'; }
+    marker.on('click', () => openPanel(base));
+    markers.push({ layer:marker, base, cats, show });
+  });
+  updateCount();
+}
+
+function applyFilter() {
+  markers.forEach(m => {
+    const show = activeFilter === 'all' || m.cats.includes(activeFilter);
+    const el = m.layer.getElement();
+    if (el) el.style.display = show ? '' : 'none';
+    m.show = show;
+  });
+  updateCount();
+}
+
+function updateCount() {
+  document.getElementById('vc').textContent = markers.filter(m => m.show).length;
+}
+
+// All filter buttons (desktop + mobile)
+document.querySelectorAll('.fb').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.fb').forEach(b => b.classList.remove('active'));
+    // activate both desktop and mobile version of same filter
+    document.querySelectorAll(`.fb[data-cat="${btn.dataset.cat}"]`).forEach(b => b.classList.add('active'));
+    activeFilter = btn.dataset.cat;
+    applyFilter();
+  });
+});
+
+function openPanel(base) {
+  const cats = getCategories(base);
+  const color = COLOR[base.category] || '#8b6914';
+  const sclass = (base.status||'').toLowerCase().includes('rotational') || (base.status||'').toLowerCase().includes('nato') ? 'srot' : 'sop';
+
+  const catBadges = cats.map(c => {
+    const col = COLOR[c];
+    return `<span class="catbadge" style="background:${col}18;color:${col};border:1px solid ${col}33">
+      <span style="width:6px;height:6px;border-radius:50%;background:${col};display:inline-block"></span>
+      ${LABEL[c]}
+    </span>`;
+  }).join('');
+
+  const nuclearBlock = base.nuclear
+    ? `<div class="ir"><div class="il" style="color:#c0392b">⚠ Nuclear Capability</div><div class="iv" style="color:#c0392b;font-weight:600">☢️ B61 nuclear weapons present under NATO nuclear-sharing agreement</div></div><div class="divider"></div>`
+    : '';
+  const units = (base.units||'').split(/[\n;]/).map(u=>u.trim()).filter(Boolean).map(u=>`• ${u}`).join('<br>') || '—';
+
+  const websiteBlock = base.website
+    ? `<div class="ir"><div class="il">Official Website</div><div class="iv"><a href="${base.website}" target="_blank" rel="noopener" class="wlink">Visit official site ↗</a></div></div><div class="divider"></div>`
+    : '';
+
+  document.getElementById('panel-content').innerHTML = `
+    <div class="ph">
+      <div><div class="pcountry">${base.country}</div><div class="pname">${base.name}</div></div>
+      <button class="cbtn" onclick="closePanel()">✕</button>
+    </div>
+    <div class="catrow">${catBadges}</div>
+    ${nuclearBlock}
+    <div class="ir"><div class="il">Branch / Command</div><div class="iv">${base.branch}</div></div>
+    <div class="ir"><div class="il">Location</div><div class="iv">${base.city||'—'}</div></div>
+    <div class="ir"><div class="il">Status</div><div class="iv"><span class="sp ${sclass}">${base.status}</span></div></div>
+    <div class="ir"><div class="il">Estimated Personnel</div><div class="iv">${base.personnel||'—'}</div></div>
+    <div class="divider"></div>
+    <div class="ir"><div class="il">Key Mission (2026)</div><div class="iv">${base.mission||'—'}</div></div>
+    <div class="divider"></div>
+    <div class="ir"><div class="il">Notable Units / Tenants</div><div class="ulist">${units}</div></div>
+    <div class="divider"></div>
+    ${websiteBlock}
+    <div class="ir"><div class="il">Notes & Recent Developments</div><div class="iv">${base.notes||'—'}</div></div>
+  `;
+  document.getElementById('panel').classList.remove('closed');
+  map.flyTo([base.lat, base.lon], Math.max(map.getZoom(), 7), {duration:.8});
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.add('closed');
+  document.getElementById('panel-content').innerHTML = `<div class="empty"><p>Tap any marker<br>to view base details</p></div>`;
+}
+
+// ── SEARCH ──
+const searchEl = document.getElementById('search');
+const sugEl = document.getElementById('suggestions');
+let sidx = -1;
+
+searchEl.addEventListener('input', () => {
+  const q = searchEl.value.toLowerCase().trim();
+  if (!q) { sugEl.style.display='none'; return; }
+  const res = bases.filter(b =>
+    b.name.toLowerCase().includes(q) ||
+    b.country.toLowerCase().includes(q) ||
+    (b.city||'').toLowerCase().includes(q)
+  ).slice(0, 8);
+  if (!res.length) { sugEl.style.display='none'; return; }
+  sidx = -1;
+  sugEl.innerHTML = res.map((b,i) => {
+    const col = COLOR[b.category]||'#8b6914';
+    const hl = b.name.replace(new RegExp(`(${searchEl.value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'i'),
+      '<mark style="background:rgba(139,105,20,.2);color:#7a5a10;border-radius:2px;">$1</mark>');
+    return `<div class="si" data-id="${b.id}">
+      <span class="sdot" style="background:${col}"></span>
+      <div><div class="sn">${hl}</div><div class="sc">${b.country} · ${b.branch}</div></div>
+    </div>`;
+  }).join('');
+  sugEl.style.display = 'block';
+  sugEl.querySelectorAll('.si').forEach(el => {
+    el.addEventListener('click', () => {
+      const base = bases.find(b => b.id === parseInt(el.dataset.id));
+      if (base) { searchEl.value = base.name; sugEl.style.display='none'; openPanel(base); }
+    });
+  });
+});
+
+searchEl.addEventListener('keydown', e => {
+  const items = sugEl.querySelectorAll('.si');
+  if (!items.length) return;
+  if (e.key==='ArrowDown'){e.preventDefault();sidx=Math.min(sidx+1,items.length-1);items.forEach((el,i)=>el.classList.toggle('active',i===sidx));}
+  else if(e.key==='ArrowUp'){e.preventDefault();sidx=Math.max(sidx-1,0);items.forEach((el,i)=>el.classList.toggle('active',i===sidx));}
+  else if(e.key==='Enter'){if(sidx>=0)items[sidx].click();else if(items.length)items[0].click();}
+  else if(e.key==='Escape'){sugEl.style.display='none';}
+});
+
+document.addEventListener('click', e => { if(!e.target.closest('.search-wrap')) sugEl.style.display='none'; });
+</script>
+</body>
+</html>
