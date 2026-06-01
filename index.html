@@ -152,6 +152,7 @@
   .fb[data-cat="navy"].active { background: var(--navy); }
   .fb[data-cat="airforce"].active { background: var(--airforce); }
   .fb[data-cat="nato"].active { background: var(--nato); }
+  .fb[data-cat="nuclear"].active { background: #cc0000; }
   .fdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
   /* ── LAYOUT ── */
@@ -402,6 +403,7 @@
     <button class="fb" data-cat="navy"><span class="fdot" style="background:#00cfff"></span>Navy</button>
     <button class="fb" data-cat="airforce"><span class="fdot" style="background:#ff6600"></span>Air Force</button>
     <button class="fb" data-cat="nato"><span class="fdot" style="background:#bf00ff"></span>NATO</button>
+    <button class="fb" data-cat="nuclear"><span class="fdot" style="background:#ff0000"></span>☢️ Nuclear</button>
   </div>
 </header>
 
@@ -412,6 +414,7 @@
   <button class="fb" data-cat="navy"><span class="fdot" style="background:#00cfff"></span>Navy</button>
   <button class="fb" data-cat="airforce"><span class="fdot" style="background:#ff6600"></span>Air Force</button>
   <button class="fb" data-cat="nato"><span class="fdot" style="background:#bf00ff"></span>NATO</button>
+  <button class="fb" data-cat="nuclear"><span class="fdot" style="background:#ff0000"></span>☢️ Nuclear</button>
 </div>
 
 <div class="main">
@@ -492,7 +495,7 @@ function renderMarkers() {
 
 function applyFilter() {
   markers.forEach(m => {
-    const show = activeFilter === 'all' || m.cats.includes(activeFilter);
+    const show = activeFilter === 'all' || m.cats.includes(activeFilter) || (activeFilter === 'nuclear' && m.base.nuclear === true);
     const el = m.layer.getElement();
     if (el) el.style.display = show ? '' : 'none';
     m.show = show;
