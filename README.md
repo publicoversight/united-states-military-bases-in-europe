@@ -17,3 +17,4 @@ Lists of U.S. Military Bases Abroad, 1776–2021 American University Digital Res
 This is an independent hobby project built for research, visualization, and public-access purposes. I’m not a professional developer, and the project is still evolving over time.
 
 If you notice inaccuracies, outdated information, or missing sites, feel free to open an issue.
+Built amateurly. Specific use of Ollama to help with prototyping.
