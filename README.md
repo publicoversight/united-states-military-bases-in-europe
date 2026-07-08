@@ -19,7 +19,7 @@ This is an independent hobby project built for research, visualization, and publ
 Feel free to open an issue.
 
 Recommend checking the important work of; 
-- World beyond war https://worldbeyondwar.org/military-empires?base=dockyardukgi
-- David Vine https://www.overseasbases.net/facts.html#_edn1
+- World beyond war https://worldbeyondwar.org/military-empires
+- David Vine https://www.overseasbases.net/facts.html
   
 Built amateurly. Specific use of Ollama to help with prototyping.
