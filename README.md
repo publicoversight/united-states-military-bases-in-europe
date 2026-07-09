@@ -14,9 +14,7 @@ NATO on the Map - https://www.nato.int/en/about-us/organization/nato-on-the-map
 Lists of U.S. Military Bases Abroad, 1776–2021 American University Digital Research Archive https://www.basenation.us/maps.html
 
 
-This is an independent hobby project built for research, visualization, and public-access purposes. I’m not a professional developer, and the project is still evolving over time.
-
-Feel free to open an issue.
+This is an independent hobby project built for research, visualization, and public-access purposes. I’m not a professional developer, and the project is still evolving over time. Specifc use of Ollama (locally) to help think of structure and logic for the html. 
 
 Recommend checking the important work of; 
 - World beyond war https://worldbeyondwar.org/military-empires
