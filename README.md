@@ -20,4 +20,3 @@ Recommend checking the important work of;
 - World beyond war https://worldbeyondwar.org/military-empires
 - David Vine https://www.overseasbases.net/facts.html
   
-Built amateurly.
