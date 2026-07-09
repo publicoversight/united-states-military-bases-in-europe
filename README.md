@@ -22,4 +22,4 @@ Recommend checking the important work of;
 - World beyond war https://worldbeyondwar.org/military-empires
 - David Vine https://www.overseasbases.net/facts.html
   
-Built amateurly. Specific use of Ollama to help with prototyping.
+Built amateurly.
